@@ -231,7 +231,16 @@ int draw_cb(XPLMDrawingPhase phase, int before, void *ref) {
         XPLMDrawString(magenta, 20, screen_height - 40, rudder_control ?
             "MOUSE RUDDER CONTROL" : "MOUSE YOKE CONTROL",
             NULL, xplmFont_Proportional);
-        if (rudder_control) {
+        /*if (rudder_control) {*/
+            /*[> Draw little bars to indicate maximum rudder deflection. <]*/
+            /*for (int i = 1; i < 3; i++) {*/
+                /*XPLMDrawString(green, cursor_pos[0] - rudder_defl_dist,*/
+                    /*cursor_pos[1] + 4 - 7 * i, "|", NULL, xplmFont_Basic);*/
+                /*XPLMDrawString(green, cursor_pos[0] + rudder_defl_dist,*/
+                    /*cursor_pos[1] + 4 - 7 * i, "|", NULL, xplmFont_Basic);*/
+            /*}*/
+        /*}*/
+		if (rudder_control) {
             /* Draw little bars to indicate maximum rudder deflection. */
             for (int i = 1; i < 3; i++) {
                 XPLMDrawString(green, cursor_pos[0] - rudder_defl_dist,
@@ -240,8 +249,35 @@ int draw_cb(XPLMDrawingPhase phase, int before, void *ref) {
                     cursor_pos[1] + 4 - 7 * i, "|", NULL, xplmFont_Basic);
             }
         }
+        else {
+            XPLMDrawString(green, screen_width/2,
+                screen_height/2, "+", NULL, xplmFont_Basic);
+        }
+
     }
     return 1;
+}
+
+float cap(float f) {
+    if (f > 1.0) {
+        return 1.0;
+    }
+    if (f < -1.0) {
+        return -1.0;
+    }
+    return f;
+}
+
+float threshold(float f, float cutoff) {
+    if (f < cutoff && f > -cutoff) {
+        return 0.0;
+    }
+    if (f < 0) {
+        f = f + cutoff;
+    } else {
+        f = f - cutoff;
+    }
+    return f / (1 - cutoff);
 }
 
 float loop_cb(float last_call, float last_loop, int count, void *ref) {
@@ -274,6 +310,9 @@ float loop_cb(float last_call, float last_loop, int count, void *ref) {
     } else {
         float yoke_roll = 2 * (m_x / (float)screen_width) - 1;
         float yoke_pitch = 1 - 2 * (m_y / (float)screen_height);
+        yoke_roll = cap(yoke_roll * 4);
+        yoke_roll = threshold(yoke_roll, 0.05);
+        yoke_pitch = threshold(yoke_pitch, 0.05);
         XPLMSetDataf(yoke_roll_ratio, yoke_roll);
         XPLMSetDataf(yoke_pitch_ratio, yoke_pitch);
         /* If rudder is still deflected, move it gradually back to zero. */
